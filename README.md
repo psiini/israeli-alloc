@@ -1,33 +1,43 @@
 # israeli-alloc
-Allocate memory on a random victim programs address space.<br>
+Allocate memory on a random victim program's address space.<br>
+
+Usage:
 
 ```rs
-        let block = israel_alloc!(5000); // Reserve process and allocate memory in its address space
 
-        let mut data = match block {
+        let provided_block = match israel_alloc!(5000, None) {
             Some(k) => k,
-            None => panic!("ERR! Process rejected memory request."),
+            None => panic!("Process may need elevated permissions before allocation."),
         };
 
-        let data_to_write = b"FREE PALESTINE!";
-
-        let mut ptr_actual = data.block_ptr;
-        unsafe {
-            for _k in 0..90 {
-                destroy_land!(
-                    data,
-                    data_to_write.as_ptr() as *const c_void,
-                    data_to_write.len()
-                ); // Write to said reserved process ID's address space
-
-                ptr_actual = ptr_actual.cast::<u8>().add(1).cast::<c_void>();
-                data.block_ptr = ptr_actual;
-                println!("{:?}", ptr_actual);
+        let to_write = b"FREE PALESTINE!";
+        match destroy_land!(
+            provided_block,
+            to_write as *const u8 as *const c_void,
+            to_write.len()
+        ) {
+            Ok(_) => {
+                let base_address = provided_block.block_ptr;
+                let process_id = provided_block.victim_process_id;
+                println!(
+                    "Memory allocated @{:?} on process-id: {}",
+                    base_address, process_id
+                )
             }
+            Err(err) => panic!("{}", err),
         }
-
-        let _where = data.victim_process_id;
-        println!("Wrote to process: {} at: {:?}", _where, data.block_ptr);
 ```
 
-<b>Warning: Sometimes a process might reject an allocation request, hence a panic. Simply retry the allocation and hope the next one is valid.</b>
+
+[🇵🇸 Gaza Crisis Appeal 🇵🇸](https://www.almustafausa.org/appeals/emergency/palestine/?gad_source=1&gad_campaignid=20948761641&gbraid=0AAAAACdpV8WDABG774oT22PQM1N00kIV-&gclid=CjwKCAjwidXQBhAZEiwA4egw6D250nDDIJKFrsO44bk0ovnx6WQMC6VFc_othZaG4b0AdqKe3wZBSBoCKAMQAvD_BwE)
+
+Israel has <i>zero</i> right to exist, colonialism by the white race. Donate today and help a child in need.
+
+
+### <b>Formal Warning
+This library is a research tool as well as a political statement. It is not recommended you embed this into software that is to be distributed to the public.
+<br>
+
+I am <u>NOT</u> responsible for any catastrophic result that results in the use of this.
+
+<b>

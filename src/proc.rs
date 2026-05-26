@@ -1,19 +1,24 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::fmt::Display;
 use std::mem::size_of;
 use windows::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
 };
 
-#[derive(Debug)]
-pub(crate) struct ProcessInfo {
+pub struct ProcessInfo {
     pub name: [u16; 260],
     pub id: u32,
 }
 
-#[derive(Debug)]
+impl std::ops::Deref for ProcessInfo {
+    type Target = [u16; 260];
+
+    fn deref(&self) -> &Self::Target {
+        &self.name
+    }
+}
+
 pub struct ProcessSnapshot {
     handle: HANDLE,
     collected_processes: Vec<ProcessInfo>,
@@ -41,7 +46,7 @@ impl ProcessSnapshot {
         }
     }
 
-    fn has_next(&mut self, entry: &mut PROCESSENTRY32W) -> bool {
+    fn has_next(&self, entry: &mut PROCESSENTRY32W) -> bool {
         let snapshot = self.handle;
         unsafe {
             match Process32NextW(snapshot, entry) {
@@ -55,12 +60,15 @@ impl ProcessSnapshot {
         let mut process_id: u32 = 0;
         let mut process_entry: PROCESSENTRY32W = PROCESSENTRY32W::default();
 
+        self.collected_processes.clear();
+
         let snapshot: HANDLE = self.handle;
 
         if snapshot != INVALID_HANDLE_VALUE {
             process_entry.dwSize = size_of::<PROCESSENTRY32W>() as u32;
 
             let entry_ref: &mut PROCESSENTRY32W = &mut process_entry;
+
             let valid_first = self.has_first(entry_ref);
 
             if valid_first {
@@ -69,14 +77,13 @@ impl ProcessSnapshot {
 
                     let exe_name = entry_ref.szExeFile;
 
-                    if process_id != 0 && process_id != 4 {
-                        self.collected_processes.push(ProcessInfo {
-                            name: exe_name,
-                            id: process_id,
-                        });
-                    }
+                    self.collected_processes.push(ProcessInfo {
+                        name: exe_name,
+                        id: process_id,
+                    });
 
                     let has_next = self.has_next(entry_ref);
+
                     if !has_next {
                         break;
                     }
