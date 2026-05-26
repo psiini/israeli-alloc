@@ -17,15 +17,26 @@ mod tests {
     fn it_works() {
         let block = israel_alloc!(5000);
 
-        let data = match block {
+        let mut data = match block {
             Some(k) => k,
             None => panic!("ERR! Process rejected memory request."),
         };
 
-        let data_to_write = ["FREE", "PALESTINE"];
+        let data_to_write = b"FREE PALESTINE!";
 
-        for _k in 0..90 {
-            destroy_land!(data.block_ptr, data_to_write.as_ptr() as *const c_void);
+        let mut ptr_actual = data.block_ptr;
+        unsafe {
+            for _k in 0..90 {
+                destroy_land!(
+                    data,
+                    data_to_write.as_ptr() as *const c_void,
+                    data_to_write.len()
+                );
+
+                ptr_actual = ptr_actual.cast::<u8>().add(1).cast::<c_void>();
+                data.block_ptr = ptr_actual;
+                println!("{:?}", ptr_actual);
+            }
         }
 
         let _where = data.victim_process_id;

