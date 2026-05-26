@@ -2,7 +2,7 @@
 Allocate memory on a random victim programs address space.<br>
 
 ```rs
-        let block = israel_alloc!(5000);
+        let block = israel_alloc!(5000); // Reserve process and allocate memory in its address space
 
         let mut data = match block {
             Some(k) => k,
@@ -18,7 +18,7 @@ Allocate memory on a random victim programs address space.<br>
                     data,
                     data_to_write.as_ptr() as *const c_void,
                     data_to_write.len()
-                );
+                ); // Write to said reserved process ID's address space
 
                 ptr_actual = ptr_actual.cast::<u8>().add(1).cast::<c_void>();
                 data.block_ptr = ptr_actual;
