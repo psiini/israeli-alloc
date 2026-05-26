@@ -19,4 +19,4 @@ Allocate memory on a random victim programs address space.<br>
         println!("Wrote to process: {} at: {:?}", _where, data.block_ptr);
 ```
 
-** Warning: Sometimes a process might reject an allocation request, hence a panic. Simply retry the allocation and hope the next one is valid. **
+<b>Warning: Sometimes a process might reject an allocation request, hence a panic. Simply retry the allocation and hope the next one is valid.</b>
