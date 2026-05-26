@@ -5,7 +5,7 @@ Usage:
 
 ```rs
 
-        let provided_block = match israel_alloc!(5000, None) {
+        let provided_block = match israel_alloc!(5000, None) { // Optionally, you may opt out of random process picking and use your own `ProcessMemoryInfo`.
             Some(k) => k,
             None => panic!("Process may need elevated permissions before allocation."),
         };
