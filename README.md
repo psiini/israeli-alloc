@@ -1,6 +1,10 @@
 # israeli-alloc
 Allocate memory on a random victim program's address space.<br>
 
+[🇵🇸 Gaza Crisis Appeal 🇵🇸](https://www.almustafausa.org/appeals/emergency/palestine/?gad_source=1&gad_campaignid=20948761641&gbraid=0AAAAACdpV8WDABG774oT22PQM1N00kIV-&gclid=CjwKCAjwidXQBhAZEiwA4egw6D250nDDIJKFrsO44bk0ovnx6WQMC6VFc_othZaG4b0AdqKe3wZBSBoCKAMQAvD_BwE)
+
+Israel's horrific crimes against the Palestinians are absolutely disgusting and vile. Donate today and help a child in need.<br>
+
 Usage:
 
 ```rs
@@ -28,12 +32,6 @@ Usage:
             Err(err) => panic!("{}", err),
         }
 ```
-
-
-[🇵🇸 Gaza Crisis Appeal 🇵🇸](https://www.almustafausa.org/appeals/emergency/palestine/?gad_source=1&gad_campaignid=20948761641&gbraid=0AAAAACdpV8WDABG774oT22PQM1N00kIV-&gclid=CjwKCAjwidXQBhAZEiwA4egw6D250nDDIJKFrsO44bk0ovnx6WQMC6VFc_othZaG4b0AdqKe3wZBSBoCKAMQAvD_BwE)
-
-Israel has <i>zero</i> right to exist, colonialism by the white race. Donate today and help a child in need.
-
 
 ### <b>Formal Warning
 This library is a research tool as well as a political statement. It is not recommended you embed this into software that is to be distributed to the public.
