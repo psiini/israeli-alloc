@@ -1,19 +1,33 @@
 pub mod alloc;
-pub(crate) mod proc;
+mod err;
+pub mod proc;
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
 
 #[cfg(test)]
 mod tests {
-    use std::os::raw::c_void;
 
-    use super::*;
-    use crate::alloc::AllocationWrapper;
+    use std::ffi::c_void;
+
+    use crate::{
+        alloc::{AllocationWrapper, ProcessClassification},
+        destroy_land, israel_alloc,
+        proc::ProcessSnapshot,
+    };
 
     #[test]
     fn it_works() {
-        let provided_block = match israel_alloc!(5000, None) {
+        let wanted_id =
+            ProcessSnapshot::new().find_id_by_name(String::from("CalculatorApp.exe")) as u32;
+
+        let provided_block = match israel_alloc!(
+            5000,
+            Some(ProcessClassification {
+                process_id: wanted_id
+            })
+        ) {
             Some(k) => k,
             None => panic!("Process may need elevated permissions before allocation."),
         };

