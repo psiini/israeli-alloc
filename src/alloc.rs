@@ -61,7 +61,7 @@ impl AllocationWrapper {
     }
 
     /// Allocate a block of size `usize`. If you instead would like to commit a block
-    /// to a SPECIFIC process, you may pass your own `ProcessMemoryInfo`.
+    /// to a SPECIFIC process, you may pass your own `ProcessClassification`.
     ///
     /// The returned `ProcessMemoryInfo` contains where the block starts,
     /// as well as the process ID of the victim process.
